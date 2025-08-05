@@ -30,9 +30,13 @@ IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT') is not None
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-q-nhacj+2p+bsautne*czu^qhr&)^jqn#v^ke(*644u$&gu9*p')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = not IS_RAILWAY
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS設定
+if IS_RAILWAY:
+    ALLOWED_HOSTS = ['*']  # Railway環境では全てのホストを許可
+else:
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
