@@ -10,3 +10,6 @@ gunicorn==21.2.0
 whitenoise==6.6.0
 dj-database-url==2.1.0
 requests==2.31.0
+pdfplumber==0.10.3
+pandas==2.1.4
+PyMuPDF==1.23.19
