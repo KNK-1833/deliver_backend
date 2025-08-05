@@ -131,6 +131,30 @@ def create_test_users():
     except Exception as e:
         print(f"❌ ドライバーユーザー2作成エラー: {e}")
     
+    # 5. シードユーザー
+    try:
+        if not User.objects.filter(email='seed@delivery-test.com').exists():
+            # 既存のusernameをチェック
+            username = 'seed_test'
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f'seed_test_{counter}'
+                counter += 1
+                
+            seed_user = User.objects.create_user(
+                username=username,
+                email='seed@delivery-test.com',
+                password='SeedTest123!',
+                first_name='シード',
+                last_name='テスト',
+                user_type='seed'
+            )
+            print(f"✅ シードユーザー作成: {seed_user.email} (username: {username})")
+        else:
+            print("⚠️  シードユーザー既存: seed@delivery-test.com")
+    except Exception as e:
+        print(f"❌ シードユーザー作成エラー: {e}")
+    
     print("\n" + "="*50)
     print("🎉 テストユーザー作成完了！")
     print("="*50)
@@ -151,6 +175,11 @@ def create_test_users():
     print("\n4. ドライバー2:")
     print("   Email: driver2@delivery-test.com")
     print("   Password: DriverTest123!")
+    
+    print("\n5. シードユーザー:")
+    print("   Email: seed@delivery-test.com")
+    print("   Password: SeedTest123!")
+    print("   権限: シード管理機能アクセス")
     
     print(f"\n📊 総ユーザー数: {User.objects.count()}")
     print(f"📊 ドライバー数: {DriverProfile.objects.count()}")
