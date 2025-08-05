@@ -163,7 +163,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://192.168.10.4:3000",
+    "https://deliverfrontend-production.up.railway.app",
 ]
+
+# Railway環境でのCORS設定追加
+if IS_RAILWAY:
+    # 環境変数からフロントエンドURLを取得
+    frontend_url = os.environ.get('FRONTEND_URL')
+    if frontend_url and frontend_url not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(frontend_url)
 
 CORS_ALLOW_CREDENTIALS = True
 
