@@ -6,7 +6,6 @@ Railway等のクラウド環境で実行する想定
 import os
 import sys
 import django
-from django.core.management import execute_from_command_line
 
 # Django設定を読み込み
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -23,11 +22,12 @@ def create_test_users():
     # 1. 管理者ユーザー
     if not User.objects.filter(email='admin@delivery-test.com').exists():
         admin_user = User.objects.create_superuser(
+            username='admin',
             email='admin@delivery-test.com',
             password='AdminTest123!',
             first_name='管理者',
             last_name='テスト',
-            user_type='business'
+            user_type='company'
         )
         print(f"✅ 管理者ユーザー作成: {admin_user.email}")
     else:
@@ -36,11 +36,12 @@ def create_test_users():
     # 2. 事業者ユーザー
     if not User.objects.filter(email='business@delivery-test.com').exists():
         business_user = User.objects.create_user(
+            username='business',
             email='business@delivery-test.com',
             password='BusinessTest123!',
             first_name='事業者',
             last_name='テスト',
-            user_type='business'
+            user_type='company'
         )
         print(f"✅ 事業者ユーザー作成: {business_user.email}")
     else:
@@ -49,6 +50,7 @@ def create_test_users():
     # 3. ドライバーユーザー
     if not User.objects.filter(email='driver@delivery-test.com').exists():
         driver_user = User.objects.create_user(
+            username='driver1',
             email='driver@delivery-test.com',
             password='DriverTest123!',
             first_name='ドライバー',
@@ -60,9 +62,7 @@ def create_test_users():
         DriverProfile.objects.create(
             user=driver_user,
             license_number='TEST-12345',
-            vehicle_type='軽トラック',
-            phone_number='090-1234-5678',
-            address='東京都渋谷区テスト1-2-3'
+            vehicle_type='light_truck'
         )
         print(f"✅ ドライバーユーザー作成: {driver_user.email}")
         print("✅ ドライバープロフィール作成完了")
@@ -72,6 +72,7 @@ def create_test_users():
     # 4. 追加ドライバーユーザー
     if not User.objects.filter(email='driver2@delivery-test.com').exists():
         driver_user2 = User.objects.create_user(
+            username='driver2',
             email='driver2@delivery-test.com',
             password='DriverTest123!',
             first_name='ドライバー2',
@@ -83,9 +84,7 @@ def create_test_users():
         DriverProfile.objects.create(
             user=driver_user2,
             license_number='TEST-67890',
-            vehicle_type='バン',
-            phone_number='090-5678-9012',
-            address='東京都新宿区テスト4-5-6'
+            vehicle_type='truck'
         )
         print(f"✅ ドライバーユーザー2作成: {driver_user2.email}")
         print("✅ ドライバープロフィール2作成完了")
