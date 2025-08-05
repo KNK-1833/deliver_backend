@@ -182,6 +182,22 @@ if IS_RAILWAY:
 
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF設定
+if IS_RAILWAY:
+    # Railway環境用のCSRF設定
+    CSRF_TRUSTED_ORIGINS = [
+        'https://deliverbackend-production-6353.up.railway.app',
+        'https://*.up.railway.app',
+    ]
+    # 環境変数からの追加
+    backend_url = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+    if backend_url:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{backend_url}')
+        
+    frontend_url = os.environ.get('FRONTEND_URL')
+    if frontend_url and frontend_url not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(frontend_url)
+
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
