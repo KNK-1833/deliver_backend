@@ -98,14 +98,35 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # データベース設定
 if IS_RAILWAY and os.environ.get('DATABASE_URL'):
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+    try:
+        import dj_database_url
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=os.environ.get('DATABASE_URL'),
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
+        }
+    except ImportError:
+        # dj-database-urlが利用できない場合の手動パース
+        db_url = os.environ.get('DATABASE_URL')
+        if db_url and db_url.startswith('postgres'):
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                    'NAME': 'postgres',  # Railway PostgreSQLのデフォルト
+                    'USER': 'postgres',
+                    'HOST': 'localhost',
+                    'PORT': '5432',
+                }
+            }
+        else:
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'db.sqlite3',
+                }
+            }
 else:
     DATABASES = {
         'default': {
