@@ -99,10 +99,11 @@ source .venv/bin/activate && cd backend && python manage.py shell
 - `POST /uploads/{id}/create-delivery/` - ファイルから配送依頼作成
 
 ### データベース設定
-- 開発環境: SQLite（USE_SQLITE=True）
-- 本番環境: PostgreSQL（USE_SQLITE=False）
+- 全環境: PostgreSQL統一
+- ローカル開発: `delivery_support_dev` データベース
+- 本番環境: Railway PostgreSQL
 - 環境変数: `backend/.env`ファイルで管理
-- 必要な環境変数: `CLAUDE_API_KEY`（Claude API連携用）
+- 必要な環境変数: `DATABASE_URL`, `CLAUDE_API_KEY`
 
 ## テスト
 

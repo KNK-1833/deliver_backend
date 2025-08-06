@@ -204,6 +204,19 @@ def mock_claude_response():
 def use_test_settings():
     """テスト用設定の適用"""
     with override_settings(
+        DATABASES={
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'test_delivery_support',
+                'USER': 'postgres',
+                'PASSWORD': 'password',
+                'HOST': 'localhost',
+                'PORT': '5432',
+                'TEST': {
+                    'NAME': 'test_delivery_support_test',
+                },
+            }
+        },
         CLAUDE_API_KEY='test-api-key',
         EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
         MEDIA_ROOT='/tmp/test_media',

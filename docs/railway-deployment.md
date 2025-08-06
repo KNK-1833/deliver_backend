@@ -97,8 +97,9 @@ if IS_RAILWAY:
         f"https://{os.environ.get('RAILWAY_STATIC_URL', '')}"
     ]
 
-# データベース設定
-if IS_RAILWAY:
+# データベース設定 - PostgreSQL統一
+if os.environ.get('DATABASE_URL'):
+    # Railway環境またはDATABASE_URLが設定されている場合
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('DATABASE_URL'),
@@ -107,10 +108,15 @@ if IS_RAILWAY:
         )
     }
 else:
+    # ローカル開発環境用PostgreSQL設定
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'delivery_support_dev'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 

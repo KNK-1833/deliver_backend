@@ -102,7 +102,8 @@ test/backend/
 
 ## 注意事項
 
-- テスト実行時は自動的にテスト用データベースが作成・削除されます
+- テスト実行時は自動的にPostgreSQLテスト用データベースが作成・削除されます
+- PostgreSQLサーバーがローカルで稼働している必要があります
 - Claude API呼び出しはモックを使用しているため、実際のAPIキーは不要です
 - 一部のテストで実際の画像ファイル（camera_image.jpg）を使用します
 
@@ -122,6 +123,12 @@ AssertionError: Test image file not found
 
 ### データベースエラー
 ```
-sqlite3.OperationalError: database is locked
+psycopg2.OperationalError: could not connect to server
 ```
-→ 他のDjangoプロセスが動作していないか確認してください
+→ PostgreSQLサーバーが起動しているか確認してください
+
+### テスト用データベース権限エラー
+```
+django.db.utils.OperationalError: permission denied to create database
+```
+→ PostgreSQLユーザーにデータベース作成権限があるか確認してください
