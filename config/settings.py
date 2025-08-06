@@ -19,13 +19,14 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Railway環境の判定 - より確実な判定方法
+# Railway環境の判定 - 一時的にPostgreSQLを無効化
 IS_RAILWAY = any([
     os.environ.get('RAILWAY_ENVIRONMENT'),
     os.environ.get('RAILWAY_PROJECT_ID'),
     os.environ.get('RAILWAY_SERVICE_ID'),
-    os.environ.get('DATABASE_URL', '').startswith('postgres')
 ])
+# PostgreSQL使用を一時的に無効化
+USE_POSTGRESQL = False  # os.environ.get('DATABASE_URL', '').startswith('postgres')
 
 
 # Quick-start development settings - unsuitable for production
@@ -96,44 +97,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# データベース設定
-if IS_RAILWAY and os.environ.get('DATABASE_URL'):
-    try:
-        import dj_database_url
-        DATABASES = {
-            'default': dj_database_url.config(
-                default=os.environ.get('DATABASE_URL'),
-                conn_max_age=600,
-                conn_health_checks=True,
-            )
-        }
-    except ImportError:
-        # dj-database-urlが利用できない場合の手動パース
-        db_url = os.environ.get('DATABASE_URL')
-        if db_url and db_url.startswith('postgres'):
-            DATABASES = {
-                'default': {
-                    'ENGINE': 'django.db.backends.postgresql',
-                    'NAME': 'postgres',  # Railway PostgreSQLのデフォルト
-                    'USER': 'postgres',
-                    'HOST': 'localhost',
-                    'PORT': '5432',
-                }
-            }
-        else:
-            DATABASES = {
-                'default': {
-                    'ENGINE': 'django.db.backends.sqlite3',
-                    'NAME': BASE_DIR / 'db.sqlite3',
-                }
-            }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# データベース設定 - 一時的にSQLiteのみ使用
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
+}
 
 
 # Password validation
