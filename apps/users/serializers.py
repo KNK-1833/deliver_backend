@@ -78,26 +78,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # emailフィールドを追加
+        # emailフィールドをusername_fieldとして設定
         self.fields[self.username_field] = serializers.EmailField()
-        self.fields['email'] = serializers.EmailField()
 
     def validate(self, attrs):
-        # emailでログインの場合
-        email = attrs.get('email') or attrs.get('username')
-        password = attrs.get('password')
-
-        if email and password:
-            # emailでユーザーを検索してusernameを取得
-            try:
-                user = User.objects.get(email=email)
-                # usernameフィールドを設定
-                attrs[self.username_field] = user.username
-                attrs['username'] = user.username
-            except User.DoesNotExist:
-                raise serializers.ValidationError(
-                    'No active account found with the given credentials'
-                )
+        # emailを正しいフィールド名に設定
+        email = attrs.get('email')
+        if email:
+            attrs[self.username_field] = email
 
         # 親クラスのvalidateを呼び出し
         result = super().validate(attrs)
