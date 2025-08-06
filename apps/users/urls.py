@@ -1,5 +1,5 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 from . import views
 
 urlpatterns = [
@@ -8,6 +8,8 @@ urlpatterns = [
     path('driver-profile/', views.DriverProfileView.as_view(), name='driver-profile'),
     path('available-drivers/', views.available_drivers, name='available-drivers'),
     path('drivers/', views.all_drivers, name='all-drivers'),
-    path('token/', views.CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
+    # 一時的に標準のTokenObtainPairViewを使用
+    path('token/', TokenObtainPairView.as_view(), name='token-obtain-pair'),
+    # path('token/', views.CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]
