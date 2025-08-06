@@ -153,7 +153,7 @@ Railwayダッシュボードで以下の環境変数を設定：
 
 ```bash
 # Django設定
-SECRET_KEY=<ランダムな秘密鍵>
+SECRET_KEY=bbh!$hiif8gs4k7s-yah62ac_=80k3qz^v!5fv)f1q3s9=g$kx
 DJANGO_SETTINGS_MODULE=config.settings
 
 # Claude API
