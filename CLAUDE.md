@@ -132,3 +132,9 @@ python run_tests.py --module integration
 - camera_image.jpgがtest/backend/に配置済み
 - 仮想環境アクティブ化済み
 - pytest, pytest-django, pytest-mock等インストール済み
+```
+
+## リポジトリ情報
+
+- **バックエンドGitリポジトリ**: https://github.com/KNK-1833/deliver_backend.git
+- **フロントエンドGitリポジトリ**: https://github.com/KNK-1833/deliver_backend.git
