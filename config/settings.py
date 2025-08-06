@@ -19,13 +19,12 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Railway環境の判定
+# Railway環境の判定 - より厳密な判定
 IS_RAILWAY = any([
     os.environ.get('RAILWAY_ENVIRONMENT'),
     os.environ.get('RAILWAY_PROJECT_ID'),
     os.environ.get('RAILWAY_SERVICE_ID'),
-    os.environ.get('DATABASE_URL', '').startswith('postgres')
-])
+]) and os.environ.get('DATABASE_URL', '').find('railway.internal') > -1
 
 
 # Quick-start development settings - unsuitable for production
