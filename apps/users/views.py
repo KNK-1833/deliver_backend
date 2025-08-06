@@ -74,21 +74,17 @@ def all_drivers(request):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """カスタムJWTトークン取得ビュー（emailログイン対応）"""
+    serializer_class = CustomTokenObtainPairSerializer
     
     def post(self, request, *args, **kwargs):
-        # emailが送信された場合、usernameに変換
-        if 'email' in request.data and 'username' not in request.data:
-            try:
-                user = User.objects.get(email=request.data['email'])
-                # リクエストデータを変更
-                mutable_data = request.data.copy()
-                mutable_data['username'] = user.username
-                request._full_data = mutable_data
-            except User.DoesNotExist:
-                return Response(
-                    {'detail': '認証情報が正しくありません。'}, 
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
+        # emailが送信された場合、emailフィールドをusernameとして扱う
+        if 'email' in request.data:
+            # リクエストデータのコピーを作成
+            mutable_data = request.data.copy()
+            # emailをUSERNAME_FIELDとして設定
+            mutable_data['email'] = request.data['email']
+            mutable_data['password'] = request.data.get('password', '')
+            request._full_data = mutable_data
         
         # 元のpost処理を実行
         response = super().post(request, *args, **kwargs)
