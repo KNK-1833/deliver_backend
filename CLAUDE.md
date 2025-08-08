@@ -137,4 +137,4 @@ python run_tests.py --module integration
 ## リポジトリ情報
 
 - **バックエンドGitリポジトリ**: https://github.com/KNK-1833/deliver_backend.git
-- **フロントエンドGitリポジトリ**: https://github.com/KNK-1833/deliver_backend.git
+- **フロントエンドGitリポジトリ**: https://github.com/KNK-1833/deliver_frontend.git
