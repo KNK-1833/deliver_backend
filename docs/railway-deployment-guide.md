@@ -33,6 +33,8 @@ DATABASE_URL=postgresql://[自動設定]
 
 # CORS設定
 CORS_ALLOWED_ORIGINS=https://deliverfrontend-production.up.railway.app
+FRONTEND_URL=https://deliverfrontend-production.up.railway.app
+ALLOWED_TEST_ORIGINS=https://deliver-frontend-production.up.railway.app,https://deliveryfrontend-production.up.railway.app
 
 # Claude API（オプション）
 CLAUDE_API_KEY=[APIキー]
@@ -162,6 +164,19 @@ REACT_APP_API_URL=https://deliverbackend-production.up.railway.app/api
 ## 🐛 トラブルシューティング
 
 ### ❌ よくあるエラーと解決方法
+
+#### 5. CORS Error
+**エラー**: `Access to XMLHttpRequest blocked by CORS policy`
+
+**解決方法**:
+- バックエンドの環境変数に`FRONTEND_URL`を追加
+- フロントエンドのURLが変更された場合は`ALLOWED_TEST_ORIGINS`に追加
+- バックエンドを再デプロイ
+- 例：
+  ```bash
+  FRONTEND_URL=https://your-frontend.up.railway.app
+  ALLOWED_TEST_ORIGINS=https://other-frontend.up.railway.app
+  ```
 
 #### 1. Health Check Failed
 **エラー**: `Healthcheck failed!`
