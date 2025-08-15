@@ -200,17 +200,55 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://192.168.10.4:3000",
-    "https://deliverfrontend-production.up.railway.app",
+    "https://deliverfrontend-production.up.railway.app",  # ✅ 正確なURL
 ]
+
+# CORS追加設定
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# デバッグ用：CORS設定確認
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+logger.info(f"🔍 CORS DEBUG - IS_RAILWAY: {IS_RAILWAY}")
+logger.info(f"🔍 CORS DEBUG - CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 
 # Railway環境でのCORS設定追加
 if IS_RAILWAY:
+    # 緊急対策：正確なURLを強制追加
+    emergency_origins = [
+        "https://deliverfrontend-production.up.railway.app",
+    ]
+    for origin in emergency_origins:
+        if origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(origin)
+            logger.info(f"🚨 Emergency CORS origin added: {origin}")
+    
     # 環境変数からフロントエンドURLを取得
     frontend_url = os.environ.get('FRONTEND_URL')
     if frontend_url and frontend_url not in CORS_ALLOWED_ORIGINS:
         CORS_ALLOWED_ORIGINS.append(frontend_url)
+        logger.info(f"✅ FRONTEND_URL added to CORS: {frontend_url}")
+    
+    # 一時的な対策：環境変数でCORS全許可
+    if os.environ.get('CORS_ALLOW_ALL_ORIGINS') == 'True':
+        CORS_ALLOW_ALL_ORIGINS = True
+        logger.warning("🚨 CORS_ALLOW_ALL_ORIGINS is True (Emergency mode)")
 
-CORS_ALLOW_CREDENTIALS = True
+# 最終確認用ログ
+logger.info(f"🎯 Final CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 
 # CSRF設定
 if IS_RAILWAY:
