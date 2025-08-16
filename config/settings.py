@@ -19,12 +19,8 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Railway環境の判定 - より厳密な判定
-IS_RAILWAY = any([
-    os.environ.get('RAILWAY_ENVIRONMENT'),
-    os.environ.get('RAILWAY_PROJECT_ID'),
-    os.environ.get('RAILWAY_SERVICE_ID'),
-]) and os.environ.get('DATABASE_URL', '').find('railway.internal') > -1
+# 本番環境の判定
+IS_PRODUCTION = os.environ.get('RAILWAY_ENVIRONMENT') == 'production'
 
 
 # Quick-start development settings - unsuitable for production
@@ -34,11 +30,11 @@ IS_RAILWAY = any([
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-q-nhacj+2p+bsautne*czu^qhr&)^jqn#v^ke(*644u$&gu9*p')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = not IS_RAILWAY
+DEBUG = not IS_PRODUCTION
 
 # ALLOWED_HOSTS設定
-if IS_RAILWAY:
-    ALLOWED_HOSTS = ['*']  # Railway環境では全てのホストを許可
+if IS_PRODUCTION:
+    ALLOWED_HOSTS = ['*']  # 本番環境では全てのホストを許可
 else:
     ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
@@ -95,8 +91,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# データベース設定
-if IS_RAILWAY and os.environ.get('DATABASE_URL'):
+# データベース設定 - PostgreSQLのみ使用
+if os.environ.get('DATABASE_URL'):
+    # 本番環境またはDATABASE_URLが設定されている場合
     try:
         import dj_database_url
         DATABASES = {
@@ -121,10 +118,15 @@ if IS_RAILWAY and os.environ.get('DATABASE_URL'):
             }
         }
 else:
+    # ローカル開発環境用PostgreSQL設定
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'delivery_support_dev'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 
@@ -200,8 +202,25 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://192.168.10.4:3000",
-    "https://deliverfrontend-production.up.railway.app",  # ✅ 正確なURL
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3002",
+    "http://192.168.10.4:3001",
+    "http://192.168.10.4:3002",
+    "https://deliverfrontend-production.up.railway.app",
+    "https://deliver-frontend-production.up.railway.app",
+    "https://deliveryfrontend-production.up.railway.app",
 ]
+
+# デバッグ用：CORS設定の確認（本番環境でログ出力）
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+logger.info(f"🔍 CORS DEBUG - IS_PRODUCTION: {IS_PRODUCTION}")
+logger.info(f"🔍 CORS DEBUG - DEBUG: {DEBUG}")
+logger.info(f"🔍 CORS DEBUG - CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 
 # CORS追加設定
 CORS_ALLOW_CREDENTIALS = True
@@ -217,16 +236,13 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# デバッグ用：CORS設定確認
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 開発環境では全てのオリジンを許可（デバッグ用）
+if DEBUG and not IS_PRODUCTION:
+    CORS_ALLOW_ALL_ORIGINS = True
+    print("WARNING: CORS_ALLOW_ALL_ORIGINS is True (Debug mode)")
 
-logger.info(f"🔍 CORS DEBUG - IS_RAILWAY: {IS_RAILWAY}")
-logger.info(f"🔍 CORS DEBUG - CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
-
-# Railway環境でのCORS設定追加
-if IS_RAILWAY:
+# 本番環境でのCORS設定追加
+if IS_PRODUCTION:
     # 緊急対策：正確なURLを強制追加
     emergency_origins = [
         "https://deliverfrontend-production.up.railway.app",
@@ -242,17 +258,21 @@ if IS_RAILWAY:
         CORS_ALLOWED_ORIGINS.append(frontend_url)
         logger.info(f"✅ FRONTEND_URL added to CORS: {frontend_url}")
     
-    # 一時的な対策：環境変数でCORS全許可
-    if os.environ.get('CORS_ALLOW_ALL_ORIGINS') == 'True':
-        CORS_ALLOW_ALL_ORIGINS = True
-        logger.warning("🚨 CORS_ALLOW_ALL_ORIGINS is True (Emergency mode)")
+    # テスト用CORS設定（Railway環境変数から）
+    test_origins = os.environ.get('ALLOWED_TEST_ORIGINS', '')
+    if test_origins:
+        for origin in test_origins.split(','):
+            origin = origin.strip()
+            if origin and origin not in CORS_ALLOWED_ORIGINS:
+                CORS_ALLOWED_ORIGINS.append(origin)
+                logger.info(f"✅ Test origin added to CORS: {origin}")
 
 # 最終確認用ログ
 logger.info(f"🎯 Final CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 
 # CSRF設定
-if IS_RAILWAY:
-    # Railway環境用のCSRF設定
+if IS_PRODUCTION:
+    # 本番環境用のCSRF設定
     CSRF_TRUSTED_ORIGINS = [
         'https://deliverbackend-production-6353.up.railway.app',
         'https://*.up.railway.app',
