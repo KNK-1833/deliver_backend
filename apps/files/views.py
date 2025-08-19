@@ -189,6 +189,53 @@ def process_file_content(file_upload):
                 'base64': file_upload.file_data,  # すでにBase64エンコード済み
                 'media_type': file_upload.mime_type
             }
+        
+        # PDFファイルの場合（DB保存）
+        elif file_extension == '.pdf':
+            try:
+                # 一時ファイルとして保存してPDF処理
+                import tempfile
+                import os
+                
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                    temp_file.write(file_content)
+                    temp_file_path = temp_file.name
+                
+                try:
+                    pdf_result = extract_text_from_pdf(temp_file_path)
+                    if isinstance(pdf_result, dict):
+                        # 画像ベースPDFの場合
+                        if pdf_result.get('type') == 'image_based_pdf':
+                            return {
+                                'type': 'image_based_pdf',
+                                'images': pdf_result.get('images', []),
+                                'content': pdf_result['text'],
+                                'tables': pdf_result.get('tables', []),
+                                'has_tables': pdf_result.get('has_tables', False)
+                            }
+                        # 通常のテキストベースPDFの場合
+                        else:
+                            return {
+                                'type': 'text',
+                                'content': pdf_result['text'],
+                                'tables': pdf_result.get('tables', []),
+                                'has_tables': pdf_result.get('has_tables', False)
+                            }
+                    else:
+                        return {
+                            'type': 'error',
+                            'message': pdf_result
+                        }
+                finally:
+                    # 一時ファイルを削除
+                    if os.path.exists(temp_file_path):
+                        os.unlink(temp_file_path)
+            except Exception as e:
+                return {
+                    'type': 'error',
+                    'message': f"PDF処理エラー: {str(e)}"
+                }
+    
     # 旧形式（FileField）からの読み込み（互換性のため）
     elif file_upload.file:
         file_path = file_upload.file.path
@@ -209,53 +256,37 @@ def process_file_content(file_upload):
             except Exception as e:
                 return {'type': 'error', 'message': f"画像処理エラー: {str(e)}"}
 
-    # PDFファイルの場合
-    elif file_extension == '.pdf':
-        pdf_result = extract_text_from_pdf(file_path)
-        if isinstance(pdf_result, dict):
-            # 画像ベースPDFの場合
-            if pdf_result.get('type') == 'image_based_pdf':
-                return {
-                    'type': 'image_based_pdf',
-                    'images': pdf_result.get('images', []),
-                    'content': pdf_result['text'],
-                    'tables': pdf_result.get('tables', []),
-                    'has_tables': pdf_result.get('has_tables', False)
-                }
-            # 通常のテキストベースPDFの場合
+        # PDFファイルの場合（FileField）
+        elif file_extension == '.pdf':
+            pdf_result = extract_text_from_pdf(file_path)
+            if isinstance(pdf_result, dict):
+                # 画像ベースPDFの場合
+                if pdf_result.get('type') == 'image_based_pdf':
+                    return {
+                        'type': 'image_based_pdf',
+                        'images': pdf_result.get('images', []),
+                        'content': pdf_result['text'],
+                        'tables': pdf_result.get('tables', []),
+                        'has_tables': pdf_result.get('has_tables', False)
+                    }
+                # 通常のテキストベースPDFの場合
+                else:
+                    return {
+                        'type': 'text',
+                        'content': pdf_result['text'],
+                        'tables': pdf_result.get('tables', []),
+                        'has_tables': pdf_result.get('has_tables', False)
+                    }
             else:
                 return {
-                    'type': 'text',
-                    'content': pdf_result['text'],
-                    'tables': pdf_result.get('tables', []),
-                    'has_tables': pdf_result.get('has_tables', False)
+                    'type': 'error',
+                    'message': pdf_result
                 }
-        else:
-            return {
-                'type': 'error',
-                'message': pdf_result
-            }
-
-    # Excelファイルの場合
-    elif file_extension in ['.xlsx', '.xlsm', '.xls']:
-        excel_data = extract_data_from_excel(file_path)
-        return {
-            'type': 'excel',
-            'content': excel_data
-        }
-
-    # CSVファイルの場合
-    elif file_extension == '.csv':
-        csv_data = extract_data_from_csv(file_path)
-        return {
-            'type': 'csv',
-            'content': csv_data
-        }
 
     else:
         return {
             'type': 'error',
-            'message': f"サポートされていないファイル形式: {file_extension}"
+            'message': f"ファイルデータが見つかりません: file_data={bool(file_upload.file_data)}, file={bool(file_upload.file)}"
         }
 
 
