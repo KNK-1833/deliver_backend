@@ -6,6 +6,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.conf import settings
+from django.http import HttpResponse
 import pdfplumber
 import pandas as pd
 import fitz  # PyMuPDF
@@ -175,23 +176,38 @@ def extract_data_from_csv(file_path):
 def process_file_content(file_upload):
     """ファイル形式に応じてコンテンツを処理"""
     file_extension = get_file_extension(file_upload.original_name)
-    file_path = file_upload.file.path
-
-    # 画像ファイル（JPEG, PNG）の場合
-    if file_extension in ['.jpg', '.jpeg', '.png']:
-        try:
-            # 画像をBase64エンコード
-            with open(file_path, 'rb') as f:
-                file_content = f.read()
-                file_base64 = base64.b64encode(file_content).decode('utf-8')
-
+    
+    # DB保存形式（file_data）から読み込み
+    if file_upload.file_data:
+        # Base64デコードしてファイルコンテンツを取得
+        file_content = base64.b64decode(file_upload.file_data)
+        
+        # 画像ファイル（JPEG, PNG）の場合
+        if file_extension in ['.jpg', '.jpeg', '.png']:
             return {
                 'type': 'image',
-                'base64': file_base64,
+                'base64': file_upload.file_data,  # すでにBase64エンコード済み
                 'media_type': file_upload.mime_type
             }
-        except Exception as e:
-            return {'type': 'error', 'message': f"画像処理エラー: {str(e)}"}
+    # 旧形式（FileField）からの読み込み（互換性のため）
+    elif file_upload.file:
+        file_path = file_upload.file.path
+        
+        # 画像ファイル（JPEG, PNG）の場合
+        if file_extension in ['.jpg', '.jpeg', '.png']:
+            try:
+                # 画像をBase64エンコード
+                with open(file_path, 'rb') as f:
+                    file_content = f.read()
+                    file_base64 = base64.b64encode(file_content).decode('utf-8')
+
+                return {
+                    'type': 'image',
+                    'base64': file_base64,
+                    'media_type': file_upload.mime_type
+                }
+            except Exception as e:
+                return {'type': 'error', 'message': f"画像処理エラー: {str(e)}"}
 
     # PDFファイルの場合
     elif file_extension == '.pdf':
@@ -259,6 +275,33 @@ class FileUploadListCreateView(generics.ListCreateAPIView):
         else:
             # 通常ユーザーは自分のファイルのみ
             return FileUpload.objects.filter(uploader=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        """ファイルアップロード処理（DB保存）"""
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'ファイルが指定されていません。'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ファイルサイズチェック（10MB制限）
+        if file.size > 10 * 1024 * 1024:  # 10MB
+            return Response({'error': 'ファイルサイズは10MB以下にしてください。'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ファイルをBase64エンコード
+        file_content = file.read()
+        file_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # FileUploadオブジェクト作成
+        file_upload = FileUpload.objects.create(
+            uploader=request.user,
+            file_data=file_base64,
+            original_name=file.name,
+            file_type=request.POST.get('file_type', 'delivery_document'),
+            file_size=file.size,
+            mime_type=file.content_type or 'application/octet-stream'
+        )
+        
+        serializer = self.get_serializer(file_upload)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class FileUploadDetailView(generics.RetrieveDestroyAPIView):
@@ -600,3 +643,40 @@ def create_delivery_from_file(request, pk):
         return Response({
             'error': f'配送依頼の作成に失敗しました: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def download_file(request, pk):
+    """ファイルダウンロードAPI"""
+    try:
+        # ユーザーの権限チェック
+        if request.user.user_type == 'seed':
+            # シードユーザーは全ファイルダウンロード可能
+            file_upload = FileUpload.objects.get(pk=pk)
+        else:
+            # 通常ユーザーは自分のファイルのみ
+            file_upload = FileUpload.objects.get(pk=pk, uploader=request.user)
+    except FileUpload.DoesNotExist:
+        return Response({'error': 'ファイルが見つかりません。'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # ファイルデータの取得
+    if file_upload.file_data:
+        # DB保存形式からデコード
+        file_content = base64.b64decode(file_upload.file_data)
+    elif file_upload.file:
+        # 旧形式（FileField）から読み込み
+        try:
+            with open(file_upload.file.path, 'rb') as f:
+                file_content = f.read()
+        except Exception as e:
+            return Response({'error': f'ファイル読み込みエラー: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response({'error': 'ファイルデータが存在しません。'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # HTTPレスポンスとして返す
+    response = HttpResponse(file_content, content_type=file_upload.mime_type)
+    response['Content-Disposition'] = f'attachment; filename="{file_upload.original_name}"'
+    response['Content-Length'] = file_upload.file_size
+    
+    return response

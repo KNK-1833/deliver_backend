@@ -13,7 +13,10 @@ class FileUpload(models.Model):
     ]
 
     uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name='uploaded_files', verbose_name='アップロード者')
-    file = models.FileField('ファイル', upload_to='uploads/%Y/%m/%d/')
+    # ファイルデータをBase64でテキストフィールドに保存（最大10MB想定）
+    file_data = models.TextField('ファイルデータ（Base64）', blank=True, null=True)
+    # 既存のfileフィールドは互換性のため残す（後で削除）
+    file = models.FileField('ファイル（旧）', upload_to='uploads/%Y/%m/%d/', blank=True, null=True)
     original_name = models.CharField('元のファイル名', max_length=255)
     file_type = models.CharField('ファイルタイプ', max_length=20, choices=FILE_TYPE_CHOICES, default='delivery_document')
     file_size = models.PositiveIntegerField('ファイルサイズ（バイト）')
