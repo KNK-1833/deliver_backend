@@ -72,6 +72,39 @@ def all_drivers(request):
     return Response(serializer.data)
 
 
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_driver(request, driver_id):
+    """ドライバー削除API（シードユーザー用）"""
+    if request.user.user_type != 'seed':
+        return Response({'error': 'シードユーザーではありません。'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        driver = User.objects.get(id=driver_id, user_type='driver')
+    except User.DoesNotExist:
+        return Response({'error': 'ドライバーが見つかりません。'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # アクティブな配送案件があるかチェック
+    from apps.delivery.models import Assignment
+    active_assignments = Assignment.objects.filter(
+        driver=driver,
+        status__in=['accepted', 'in_progress']
+    ).exists()
+    
+    if active_assignments:
+        return Response({
+            'error': 'このドライバーにはアクティブな配送案件があるため削除できません。'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # ドライバー削除
+    driver_name = driver.get_full_name() or driver.username
+    driver.delete()
+    
+    return Response({
+        'message': f'ドライバー「{driver_name}」を削除しました。'
+    }, status=status.HTTP_200_OK)
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     """カスタムJWTトークン取得ビュー（emailログイン対応）"""
     serializer_class = CustomTokenObtainPairSerializer

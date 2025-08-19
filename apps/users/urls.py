@@ -8,6 +8,7 @@ urlpatterns = [
     path('driver-profile/', views.DriverProfileView.as_view(), name='driver-profile'),
     path('available-drivers/', views.available_drivers, name='available-drivers'),
     path('drivers/', views.all_drivers, name='all-drivers'),
+    path('drivers/<int:driver_id>/delete/', views.delete_driver, name='delete-driver'),
     # 一時的に標準のTokenObtainPairViewを使用
     path('token/', TokenObtainPairView.as_view(), name='token-obtain-pair'),
     # path('token/', views.CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
